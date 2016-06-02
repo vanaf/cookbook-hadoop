@@ -5,7 +5,7 @@ from cm_api.api_client import ApiResource
 from cm_api.api_client import ApiException
 
 CMD_TIMEOUT = 180
-api = ApiResource(sys.argv[1], username="admin", password="admin", use_tls=False, version=4)
+api = ApiResource(sys.argv[1], username="admin", password="admin", use_tls=False, version=6)
 cluster = api.get_cluster(sys.argv[2])
 
 try:
@@ -31,6 +31,10 @@ sqoop_roletype_config = {
 for rcg in sqoop.get_all_role_config_groups():
   if rcg.roleType in sqoop_roletype_config:
     rcg.update_config(sqoop_roletype_config[rcg.roleType])
+
+# Need to call upgrade_sqoop_db() to create tables in Sqoop Derby DB. In later API versions there is create_sqoop_database_tables() for it.
+if not sqoop.upgrade_sqoop_db().wait(CMD_TIMEOUT).success:
+    raise Exception("Failed to upgrade Sqoop DB")
 
 cmd = sqoop.restart()
 if not cmd.wait(CMD_TIMEOUT).success:
